@@ -27,6 +27,21 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const classCollocation = client.db("Sports-Mentor").collection("class");
+    const usersCollocation = client.db("Sports-Mentor").collection("users");
+
+    // users collection
+    app.post("/add-users", async (req, res) => {
+      const userData = req.body;
+      console.log(userData);
+      const existUser = await usersCollocation.findOne({
+        email: userData.email,
+      });
+      if (existUser) {
+        return res.send({ message: "user already exist" });
+      }
+      const result = await usersCollocation.insertOne(userData);
+      res.send(result);
+    });
 
     app.post("/add-class", async (req, res) => {
       const classData = req.body;
