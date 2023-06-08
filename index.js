@@ -32,6 +32,29 @@ async function run() {
       .db("Sports-Mentor")
       .collection("instructor");
 
+    const updateInstructor = async (id) => {
+      const instructor = await usersCollocation.findOne({
+        _id: new ObjectId(id),
+      });
+      const classId = await classCollocation
+        .find(
+          { email: instructor.email },
+          { projection: { _id: 1, enrollStudentId: 1 } }
+        )
+        .toArray();
+      const instructorObj = {
+        name: instructor.name,
+        email: instructor.email,
+        photo: instructor.photo,
+        allClass: classId.map((id) => id._id),
+        allStudent: classId.reduce(
+          (sum, id) => sum + id.enrollStudentId.length,
+          0
+        ),
+      };
+      const result = await instructorCollocation.insertOne(instructorObj);
+      console.log(instructorObj);
+    };
     // users collection
     app.post("/add-users", async (req, res) => {
       const userData = req.body;
@@ -59,6 +82,7 @@ async function run() {
 
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
+      updateInstructor(id);
       const query = { _id: new ObjectId(id) };
       const { roll } = req.body;
       // const options = { upsert: true };
@@ -89,9 +113,8 @@ async function run() {
     });
 
     // instructor collection
-    app.post("/instructor", async (req, res) => {
-      const data = req.body;
-      const result = await instructorCollocation.insertMany(data);
+    app.get("/instructors", async (req, res) => {
+      const result = await instructorCollocation.find().toArray();
       res.send(result);
     });
 
