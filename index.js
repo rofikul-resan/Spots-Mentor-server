@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
   res.send("server is running ");
 });
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.absippg.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -35,6 +35,7 @@ async function run() {
     // users collection
     app.post("/add-users", async (req, res) => {
       const userData = req.body;
+      console.log(userData);
       const existUser = await usersCollocation.findOne({
         email: userData.email,
       });
@@ -58,19 +59,17 @@ async function run() {
 
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
-      const roll = req.body;
-      const options = { upsert: true };
+      const query = { _id: new ObjectId(id) };
+      const { roll } = req.body;
+      // const options = { upsert: true };
+      console.log(id, roll);
       const updateDoc = {
         $set: {
-          roll: roll.roll,
+          roll: roll,
         },
       };
-      const result = await movies.updateOne(
-        { _id: new Object(id) },
-        updateDoc,
-        options
-      );
-      res.send(res);
+      const result = await usersCollocation.updateOne(query, updateDoc);
+      res.send(result);
     });
 
     // class api
