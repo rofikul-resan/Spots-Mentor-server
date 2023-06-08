@@ -82,9 +82,11 @@ async function run() {
 
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
-      updateInstructor(id);
-      const query = { _id: new ObjectId(id) };
       const { roll } = req.body;
+      if (roll === "instructor") {
+        updateInstructor(id);
+      }
+      const query = { _id: new ObjectId(id) };
       // const options = { upsert: true };
       console.log(id, roll);
       const updateDoc = {
@@ -113,8 +115,12 @@ async function run() {
     });
 
     // instructor collection
-    app.get("/instructors", async (req, res) => {
-      const result = await instructorCollocation.find().toArray();
+    app.get("/popular-instructor", async (req, res) => {
+      const result = await instructorCollocation
+        .find()
+        .sort({ allStudent: -1 })
+        .limit(6)
+        .toArray();
       res.send(result);
     });
 
