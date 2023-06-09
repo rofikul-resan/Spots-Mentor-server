@@ -96,7 +96,7 @@ async function run() {
       const email = req.headers.decoder.email;
       const user = await usersCollocation.findOne({ email });
       console.log(user.roll);
-      if (user.roll !== "instructor") {
+      if (user.roll !== "instructor" || user.roll !== "admin") {
         return res
           .status(401)
           .send({ error: true, message: "unauthorize access" });
@@ -146,9 +146,22 @@ async function run() {
     });
 
     // class api
-    app.post("/add-class", async (req, res) => {
+    app.post("/add-class", verifyJwt, verifyInstructor, async (req, res) => {
       const classData = req.body;
       const result = await classCollocation.insertOne(classData);
+      const instructorEmail = req.decoder.email;
+      const instructor = await instructorCollocation.findOne({ email });
+      const insClass = [...instructor.allClass, result.insertedId];
+      console.log(insClass);
+      const updateDoc = {
+        $set: {
+          allClass: insClass,
+        },
+      };
+      const updateResult = await instructorCollocation.updateOne({
+        email: instructorEmail,
+      });
+
       res.send(result);
     });
 
@@ -163,9 +176,8 @@ async function run() {
 
     app.get("/all-class", async (req, res) => {
       const result = await classCollocation
-        .find()
-        .sort({ enrollStudent: -1 })
-        .limit(6)
+        .find({ approved: { $ne: "pending" } })
+        .sort({ postTime: -1 })
         .toArray();
       res.send(result);
     });
@@ -180,7 +192,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/instructor", verifyJwt, verifyInstructor, async (req, res) => {
+    app.get("/instructor", async (req, res) => {
       const result = await instructorCollocation.find().toArray();
       res.send(result);
     });
