@@ -96,7 +96,7 @@ async function run() {
       const email = req.headers.decoder.email;
       const user = await usersCollocation.findOne({ email });
       console.log(user.roll);
-      if (user.roll !== "instructor" || user.roll !== "admin") {
+      if (user.roll !== "instructor") {
         return res
           .status(401)
           .send({ error: true, message: "unauthorize access" });
@@ -149,20 +149,27 @@ async function run() {
     app.post("/add-class", verifyJwt, verifyInstructor, async (req, res) => {
       const classData = req.body;
       const result = await classCollocation.insertOne(classData);
-      const instructorEmail = req.decoder.email;
-      const instructor = await instructorCollocation.findOne({ email });
-      const insClass = [...instructor.allClass, result.insertedId];
+      const instructorEmail = req.headers.decoder?.email;
+      const instructor = await instructorCollocation.findOne({
+        email: instructorEmail,
+      });
+      console.log(instructor, instructorEmail);
+      const allClassPrev = instructor.allClass;
+      const newClass = result.insertedId;
+      const insClass = [...allClassPrev, newClass];
       console.log(insClass);
       const updateDoc = {
         $set: {
           allClass: insClass,
         },
       };
-      const updateResult = await instructorCollocation.updateOne({
-        email: instructorEmail,
-      });
-
-      res.send(result);
+      const updateResult = await instructorCollocation.updateOne(
+        {
+          email: instructorEmail,
+        },
+        updateDoc
+      );
+      res.send({ result, updateResult });
     });
 
     app.get("/top-class", async (req, res) => {
