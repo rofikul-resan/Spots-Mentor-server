@@ -71,7 +71,7 @@ async function run() {
 
     app.get("/users", async (req, res) => {
       const email = req.query.email;
-      const result = await usersCollocation.findOne({ email }).toArray();
+      const result = await usersCollocation.findOne({ email });
       res.send(result);
     });
 
@@ -106,6 +106,15 @@ async function run() {
     });
 
     app.get("/top-class", async (req, res) => {
+      const result = await classCollocation
+        .find()
+        .sort({ enrollStudent: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+
+    app.get("/all-class", async (req, res) => {
       const result = await classCollocation
         .find()
         .sort({ enrollStudent: -1 })
