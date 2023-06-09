@@ -52,6 +52,9 @@ async function run() {
   try {
     const classCollocation = client.db("Sports-Mentor").collection("class");
     const usersCollocation = client.db("Sports-Mentor").collection("users");
+    const bookingClassCollocation = client
+      .db("Sports-Mentor")
+      .collection("bookingClass");
     const instructorCollocation = client
       .db("Sports-Mentor")
       .collection("instructor");
@@ -103,7 +106,10 @@ async function run() {
       }
       next();
     };
+
+    // ---------------------
     // users collection
+    // ---------------------------
     app.post("/add-users", async (req, res) => {
       const userData = req.body;
       const existUser = await usersCollocation.findOne({
@@ -145,7 +151,10 @@ async function run() {
       res.send(result);
     });
 
+    // --------------------------------------------------------
     // class api
+    //------------------------------------------------------
+
     app.post("/add-class", verifyJwt, verifyInstructor, async (req, res) => {
       const classData = req.body;
       const result = await classCollocation.insertOne(classData);
@@ -174,22 +183,38 @@ async function run() {
 
     app.get("/top-class", async (req, res) => {
       const result = await classCollocation
-        .find()
+        .find({ status: "approved" })
         .sort({ enrollStudent: -1 })
         .limit(6)
         .toArray();
       res.send(result);
     });
 
+    app.patch("/classes/:id", verifyJwt, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const query = { _id: new ObjectId(id) };
+      // const options = { upsert: true };
+      console.log(id, status);
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await classCollocation.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
     app.get("/all-class", async (req, res) => {
       const result = await classCollocation
-        .find({ approved: { $ne: "pending" } })
+        .find()
         .sort({ postTime: -1 })
         .toArray();
       res.send(result);
     });
-
+    // --------------------------------------------------------------------
     // instructor collection
+    // ---------------------------------------------------------------------
     app.get("/popular-instructor", async (req, res) => {
       const result = await instructorCollocation
         .find()
@@ -203,6 +228,12 @@ async function run() {
       const result = await instructorCollocation.find().toArray();
       res.send(result);
     });
+
+    // ----------------------------------------------------------------------------
+    // bookingClassCollocation api
+    // -----------------------------------------------------------------------------
+
+    app.post("/booking");
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
