@@ -21,6 +21,21 @@ app.post("/jwt", (req, res) => {
   res.send({ token });
 });
 
+const verifyJwt = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  const token = authorization.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ error: true, message: "token undefined" });
+  }
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ error: true, message: "unveiled token" });
+    }
+    req.headers.decoder = decoded;
+    next();
+  });
+};
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.absippg.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -64,10 +79,33 @@ async function run() {
       const result = await instructorCollocation.insertOne(instructorObj);
       console.log(instructorObj);
     };
+
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.headers.decoder.email;
+      const user = await usersCollocation.findOne({ email });
+      console.log(user.roll);
+      if (user.roll !== "admin") {
+        return res
+          .status(401)
+          .send({ error: true, message: "unauthorize access" });
+      }
+      next();
+    };
+
+    const verifyInstructor = async (req, res, next) => {
+      const email = req.headers.decoder.email;
+      const user = await usersCollocation.findOne({ email });
+      console.log(user.roll);
+      if (user.roll !== "instructor") {
+        return res
+          .status(401)
+          .send({ error: true, message: "unauthorize access" });
+      }
+      next();
+    };
     // users collection
     app.post("/add-users", async (req, res) => {
       const userData = req.body;
-      console.log(userData);
       const existUser = await usersCollocation.findOne({
         email: userData.email,
       });
@@ -142,7 +180,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/instructor", async (req, res) => {
+    app.get("/instructor", verifyJwt, verifyInstructor, async (req, res) => {
       const result = await instructorCollocation.find().toArray();
       res.send(result);
     });
