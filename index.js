@@ -4,6 +4,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 const app = express();
+const stripe = require("stripe")(process.env.PAY_KEY);
 
 //middleware
 app.use(cors());
@@ -232,12 +233,35 @@ async function run() {
     // bookingClassCollocation api
     // -----------------------------------------------------------------------------
 
-    app.post("/booking", async (req, res) => {
+    app.get("/booking/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await bookingClassCollocation
+        .find({ studentEmail: email })
+        .toArray();
+      res.send(result);
+    });
+    app.post("/booking", verifyJwt, async (req, res) => {
       const bookingData = req.body;
       const result = await bookingClassCollocation.insertOne(bookingData);
       res.send(result);
     });
 
+    // ------------------------------------
+    // payments
+    // ---------------------------------------
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = +price * 100;
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
