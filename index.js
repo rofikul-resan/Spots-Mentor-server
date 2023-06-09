@@ -195,7 +195,6 @@ async function run() {
       const { status } = req.body;
       const query = { _id: new ObjectId(id) };
       // const options = { upsert: true };
-      console.log(id, status);
       const updateDoc = {
         $set: {
           status: status,
@@ -233,7 +232,11 @@ async function run() {
     // bookingClassCollocation api
     // -----------------------------------------------------------------------------
 
-    app.post("/booking");
+    app.post("/booking", async (req, res) => {
+      const bookingData = req.body;
+      const result = await bookingClassCollocation.insertOne(bookingData);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
