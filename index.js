@@ -24,10 +24,10 @@ app.post("/jwt", (req, res) => {
 
 const verifyJwt = (req, res, next) => {
   const authorization = req.headers.authorization;
-  const token = authorization.split(" ")[1];
-  if (!token) {
+  if (!authorization) {
     return res.status(401).send({ error: true, message: "token undefined" });
   }
+  const token = authorization.split(" ")[1];
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
       return res.status(401).send({ error: true, message: "unveiled token" });
@@ -252,9 +252,37 @@ async function run() {
         .toArray();
       res.send(result);
     });
+    app.get("/payment/booking/:id", verifyJwt, async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const result = await bookingClassCollocation.findOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
     app.post("/booking", verifyJwt, async (req, res) => {
       const bookingData = req.body;
+      console.log(bookingData);
+      const classId = bookingData.classId;
+
+      // const updateCls = await classCollocation.updateOne(
+      //   { _id: new ObjectId(classId) },
+      //   { $push: { enrollStudentId: bookingData.studentEmail } }
+      // );
       const result = await bookingClassCollocation.insertOne(bookingData);
+      res.send(result);
+    });
+
+    app.delete("/booking/:id", verifyJwt, async (req, res) => {
+      const id = req.params.id;
+
+      // const updateCls = await classCollocation.updateOne(
+      //   { _id: new ObjectId(classId) },
+      //   { $push: { enrollStudentId: bookingData.studentEmail } }
+      // );
+      const result = await bookingClassCollocation.deleteOne({
+        _id: new ObjectId(id),
+      });
       res.send(result);
     });
 
@@ -319,6 +347,7 @@ async function run() {
           { $push: { enrollStudentId: id } }
         );
       });
+
       allInstructor.forEach(async (instEmail) => {
         const updateInst = await instructorCollocation.updateOne(
           { email: instEmail },
@@ -330,6 +359,16 @@ async function run() {
       const result = await payHistoryCollocation.insertOne(payData);
       res.send(result);
     });
+
+    app.get("/payment-history", async (req, res) => {
+      const email = req.query.email;
+      const result = await payHistoryCollocation
+        .find({ email: email })
+        .sort({ paymentTime: -1 })
+        .toArray();
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
