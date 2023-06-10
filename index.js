@@ -239,16 +239,30 @@ async function run() {
     // bookingClassCollocation api
     // -----------------------------------------------------------------------------
 
-    app.get("/booking/:email", async (req, res) => {
+    app.get("/booking/:email", verifyJwt, async (req, res) => {
       const email = req.params.email;
       const result = await bookingClassCollocation
         .find({ studentEmail: email })
+        .sort({ selectTime: -1 })
         .toArray();
       res.send(result);
     });
     app.post("/booking", verifyJwt, async (req, res) => {
       const bookingData = req.body;
       const result = await bookingClassCollocation.insertOne(bookingData);
+      res.send(result);
+    });
+
+    // ----------------------------------------------------------------------------
+    // enrollClassCollocation api
+    // -----------------------------------------------------------------------------
+
+    app.get("/enroll/:email", verifyJwt, async (req, res) => {
+      const email = req.params.email;
+      const result = await enrollClassCollocation
+        .find({ studentEmail: email })
+        .sort({ selectTime: -1 })
+        .toArray();
       res.send(result);
     });
 
