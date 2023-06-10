@@ -53,6 +53,12 @@ async function run() {
   try {
     const classCollocation = client.db("Sports-Mentor").collection("class");
     const usersCollocation = client.db("Sports-Mentor").collection("users");
+    const payHistoryCollocation = client
+      .db("Sports-Mentor")
+      .collection("payHistory");
+    const enrollClassCollocation = client
+      .db("Sports-Mentor")
+      .collection("enrollClass");
     const bookingClassCollocation = client
       .db("Sports-Mentor")
       .collection("bookingClass");
@@ -261,6 +267,44 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+
+    app.post("/payments", async (req, res) => {
+      const payData = req.body;
+      const bookingId = payData.allBookingId;
+      const bookingClass = await bookingClassCollocation
+        .find({
+          _id: { $in: bookingId.map((id) => new ObjectId(id)) },
+        })
+        .toArray();
+      console.log(bookingId, bookingClass);
+
+      // clear booking
+      const clearBooking = await bookingClassCollocation.deleteMany({
+        _id: { $in: bookingId.map((id) => new ObjectId(id)) },
+      });
+      const insertEnroll = await enrollClassCollocation.insertMany(
+        bookingClass
+      );
+      const allClassId = payData.allClassId;
+      const allInstructor = payData.instructorEmails;
+      const options = { upsert: true };
+      allClassId.forEach(async (id) => {
+        const updateCls = await classCollocation.updateOne(
+          { _id: new ObjectId(id) },
+          { $push: { enrollStudentId: id } }
+        );
+      });
+      allInstructor.forEach(async (instEmail) => {
+        const updateInst = await instructorCollocation.updateOne(
+          { email: instEmail },
+          {
+            $inc: { allStudent: 1 },
+          }
+        );
+      });
+      const result = await payHistoryCollocation.insertOne(payData);
+      res.send(result);
     });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
