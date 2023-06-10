@@ -32,7 +32,7 @@ const verifyJwt = (req, res, next) => {
     if (err) {
       return res.status(401).send({ error: true, message: "unveiled token" });
     }
-    req.headers.decoder = decoded;
+    req.decoder = decoded;
     next();
   });
 };
@@ -91,7 +91,7 @@ async function run() {
     };
 
     const verifyAdmin = async (req, res, next) => {
-      const email = req.headers.decoder.email;
+      const email = req.decoder.email;
       const user = await usersCollocation.findOne({ email });
       console.log(user.roll);
       if (user.roll !== "admin") {
@@ -103,7 +103,7 @@ async function run() {
     };
 
     const verifyInstructor = async (req, res, next) => {
-      const email = req.headers.decoder.email;
+      const email = req.decoder.email;
       const user = await usersCollocation.findOne({ email });
       console.log(user.roll);
       if (user.roll !== "instructor") {
@@ -165,7 +165,7 @@ async function run() {
     app.post("/add-class", verifyJwt, verifyInstructor, async (req, res) => {
       const classData = req.body;
       const result = await classCollocation.insertOne(classData);
-      const instructorEmail = req.headers.decoder?.email;
+      const instructorEmail = req.decoder?.email;
       const instructor = await instructorCollocation.findOne({
         email: instructorEmail,
       });
@@ -241,6 +241,11 @@ async function run() {
 
     app.get("/booking/:email", verifyJwt, async (req, res) => {
       const email = req.params.email;
+      if (req.decoder.email !== email) {
+        return res
+          .status(401)
+          .send({ error: true, message: "email not match" });
+      }
       const result = await bookingClassCollocation
         .find({ studentEmail: email })
         .sort({ selectTime: -1 })
@@ -259,6 +264,11 @@ async function run() {
 
     app.get("/enroll/:email", verifyJwt, async (req, res) => {
       const email = req.params.email;
+      if (req.decoder.email !== email) {
+        return res
+          .status(401)
+          .send({ error: true, message: "email not match" });
+      }
       const result = await enrollClassCollocation
         .find({ studentEmail: email })
         .sort({ selectTime: -1 })
