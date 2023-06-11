@@ -105,7 +105,6 @@ async function run() {
     const verifyInstructor = async (req, res, next) => {
       const email = req.decoder.email;
       const user = await usersCollocation.findOne({ email });
-      console.log(user.roll);
       if (user.roll !== "instructor") {
         return res
           .status(401)
@@ -197,7 +196,45 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/classes/:id", verifyJwt, verifyAdmin, async (req, res) => {
+    app.patch("/feedback/class/:id", async (req, res) => {
+      const id = req.params.id;
+      const feedback = req.body;
+      const option = { upsert: true };
+      const result = await classCollocation.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            feedback,
+          },
+        },
+        option
+      );
+      res.send(result);
+    });
+
+    app.patch("/all-class/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateDoc = req.body;
+      const result = await classCollocation.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            className: updateDoc.className,
+            price: updateDoc.price,
+            availableSeats: updateDoc.availableSeats,
+          },
+        }
+      );
+      res.send(result);
+    });
+
+    app.get("/all-class/:id", verifyJwt, verifyInstructor, async (req, res) => {
+      const id = req.params.id;
+      const result = await classCollocation.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    app.patch("/class-status/:id", verifyJwt, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const { status } = req.body;
       const query = { _id: new ObjectId(id) };
@@ -211,7 +248,12 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/all-class", async (req, res) => {
+    app.get("/inst-class", verifyJwt, verifyInstructor, async (req, res) => {
+      const email = req.query.email;
+      const result = await classCollocation.find({ email: email }).toArray();
+      res.send(result);
+    });
+    app.get("/all-class", verifyJwt, async (req, res) => {
       const result = await classCollocation
         .find()
         .sort({ postTime: -1 })
