@@ -189,8 +189,16 @@ async function run() {
 
     app.get("/top-class", async (req, res) => {
       const result = await classCollocation
-        .find({ status: "approved" })
-        .sort({ enrollStudent: -1 })
+        .aggregate([
+          {
+            $addFields: {
+              enrollStudentIdCount: { $size: "$enrollStudentId" },
+            },
+          },
+          {
+            $sort: { enrollStudentIdCount: -1 },
+          },
+        ])
         .limit(6)
         .toArray();
       res.send(result);
@@ -253,7 +261,7 @@ async function run() {
       const result = await classCollocation.find({ email: email }).toArray();
       res.send(result);
     });
-    app.get("/all-class", verifyJwt, async (req, res) => {
+    app.get("/all-class", async (req, res) => {
       const result = await classCollocation
         .find()
         .sort({ postTime: -1 })
