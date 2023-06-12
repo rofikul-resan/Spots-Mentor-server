@@ -7,8 +7,8 @@ const app = express();
 const stripe = require("stripe")(process.env.PAY_KEY);
 
 //middleware
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
 app.get("/", (req, res) => {
   res.send("server is running ");
@@ -207,12 +207,13 @@ async function run() {
     app.patch("/feedback/class/:id", async (req, res) => {
       const id = req.params.id;
       const feedback = req.body;
+      console.log(feedback);
       const option = { upsert: true };
       const result = await classCollocation.updateOne(
         { _id: new ObjectId(id) },
         {
           $set: {
-            feedback,
+            feedback: feedback,
           },
         },
         option
@@ -245,6 +246,7 @@ async function run() {
     app.patch("/class-status/:id", verifyJwt, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const { status } = req.body;
+      console.log(status);
       const query = { _id: new ObjectId(id) };
       // const options = { upsert: true };
       const updateDoc = {
@@ -420,7 +422,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
